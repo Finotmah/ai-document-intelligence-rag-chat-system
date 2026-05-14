@@ -1,34 +1,24 @@
-import * as pdfjsLib from "pdfjs-dist"
+import pdfParse from "pdf-parse"
 import { PDFExtractionResult } from "@/app/types/upload"
-
-// Set up worker for pdfjs
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
 
 export async function extractTextFromPDF(
   fileBuffer: ArrayBuffer
 ): Promise<PDFExtractionResult> {
   try {
-    const pdf = await pdfjsLib.getDocument({ data: fileBuffer }).promise
+    const parsed = await pdfParse(Buffer.from(fileBuffer))
+    const fullText = (parsed.text || "").trim()
+    const pageCount = Number(parsed.numpages || 0)
 
-    let fullText = ""
-    const pageCount = pdf.numPages
-
-    // Extract text from each page
-    for (let i = 1; i <= pageCount; i++) {
-      const page = await pdf.getPage(i)
-      const textContent = await page.getTextContent()
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(" ")
-
-      fullText += pageText + "\n"
+    if (!fullText) {
+      throw new Error("No text content found in the PDF")
     }
 
     return {
-      text: fullText.trim(),
+      text: fullText,
       pageCount,
     }
-  } catch (error: any) {
-    throw new Error(`Failed to extract text from PDF: ${error.message}`)
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error"
+    throw new Error(`Failed to extract text from PDF: ${message}`)
   }
 }

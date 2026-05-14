@@ -1,3 +1,9 @@
+export interface IngestResult {
+  documentId: string
+  chunkCount: number
+  embeddingModel: string
+}
+
 export interface UploadResponse {
   success: boolean
   data?: {
@@ -6,6 +12,7 @@ export interface UploadResponse {
     extractedText: string
     fileSize: number
     uploadedAt: string
+    ingest?: IngestResult
   }
   error?: {
     code: string

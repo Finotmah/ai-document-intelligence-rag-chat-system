@@ -1,6 +1,9 @@
 import { validatePDFFile } from "@/app/lib/validators/pdf"
 import { extractTextFromPDF } from "@/app/lib/pdf-parser"
+import { ingestDocument } from "@/app/lib/phase3/document-store"
 import { UploadResponse } from "@/app/types/upload"
+
+export const runtime = "nodejs"
 
 export async function POST(req: Request): Promise<Response> {
   try {
@@ -42,6 +45,26 @@ export async function POST(req: Request): Promise<Response> {
     // Extract text from PDF
     const extractionResult = await extractTextFromPDF(buffer)
 
+    // Phase 3: Ingest extracted text into document store
+    let ingestResult: any = undefined
+    try {
+      const ingestOutput = await ingestDocument({
+        fileName: file.name,
+        fileSize: file.size,
+        extractedText: extractionResult.text,
+        pageCount: extractionResult.pageCount,
+        sourceType: "pdf",
+      })
+
+      ingestResult = {
+        documentId: ingestOutput.document.id,
+        chunkCount: ingestOutput.document.chunkCount,
+        embeddingModel: ingestOutput.embeddingModel,
+      }
+    } catch (ingestError: unknown) {
+      console.warn("Phase 3 ingest warning:", ingestError instanceof Error ? ingestError.message : "Unknown ingest error")
+    }
+
     // Return success response
     const response: UploadResponse = {
       success: true,
@@ -51,6 +74,7 @@ export async function POST(req: Request): Promise<Response> {
         extractedText: extractionResult.text,
         fileSize: file.size,
         uploadedAt: new Date().toISOString(),
+        ingest: ingestResult,
       },
     }
 

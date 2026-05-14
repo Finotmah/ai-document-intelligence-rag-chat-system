@@ -183,12 +183,37 @@ export default function PDFUpload() {
                         </div>
                     </div>
 
+                    {uploadedFile.data.ingest && (
+                        <div className="mt-6 space-y-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                            <div>
+                                <p className="text-lg font-semibold text-purple-900 mb-3">✓ Phase 3: Document Ingestion Complete</p>
+                                <div className="space-y-3">
+                                    <div>
+                                        <p className="text-sm font-semibold text-purple-700">Document ID</p>
+                                        <p className="text-purple-900 text-xs font-mono break-all mt-1">{uploadedFile.data.ingest.documentId}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-purple-700">Semantic Chunks Generated</p>
+                                        <p className="text-purple-900 mt-1">{uploadedFile.data.ingest.chunkCount} chunks (300-500 words each)</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-purple-700">Embedding Model</p>
+                                        <p className="text-purple-900 text-xs mt-1">{uploadedFile.data.ingest.embeddingModel}</p>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-purple-700 mt-4">✓ Stored in PostgreSQL with pgvector embeddings for RAG</p>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="mt-6">
                     <button
                         onClick={resetUpload}
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition"
                     >
                         Upload Another PDF
                     </button>
+                    </div>
                 </div>
             )}
         </div>

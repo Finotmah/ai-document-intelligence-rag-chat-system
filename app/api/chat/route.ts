@@ -1,26 +1,25 @@
-import OpenAI from "openai"
-
-const client = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY!,
-  baseURL: "https://api.groq.com/openai/v1",
-})
+import { answerWithRAG } from "@/app/lib/phase4/rag-chat"
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
+    const message = typeof body.message === "string" ? body.message.trim() : ""
 
-    const completion = await client.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
+    if (!message) {
+      return Response.json(
         {
-          role: "user",
-          content: body.message,
+          error: "Message is required",
         },
-      ],
-    })
+        { status: 400 }
+      )
+    }
+
+    const ragResult = await answerWithRAG(message)
 
     return Response.json({
-      reply: completion.choices[0].message.content,
+      reply: ragResult.reply,
+      usedRAG: ragResult.usedRAG,
+      sources: ragResult.sources,
     })
   } catch (error: unknown) {
     console.error(error)
