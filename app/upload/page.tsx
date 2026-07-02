@@ -1,38 +1,61 @@
 "use client"
 
 import PDFUpload from "@/app/components/PDFUpload"
+import { AppContainer, AppShell, Badge, ButtonLink, PageHeader, Surface } from "@/app/components/ui"
 
 export default function UploadPage() {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-            <div className="max-w-4xl mx-auto">
-                <div className="mb-12">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                        AI Document Intelligence & RAG Chat System
-                    </h1>
-                    <p className="text-gray-600">
-                        Phase 2 + Phase 3: PDF Upload → Text Extraction → Semantic Chunking → Embeddings
-                    </p>
-                </div>
+        <AppShell>
+            <AppContainer className="py-6 sm:py-8 lg:py-10">
+                <PageHeader
+                    eyebrow="Upload"
+                    title="Index documents for semantic search"
+                    description="Upload a PDF to extract text, generate embeddings, and make it available for grounded chat responses."
+                    actions={
+                        <div className="flex flex-wrap gap-3">
+                            <ButtonLink href="/dashboard" variant="secondary">
+                                Open Dashboard
+                            </ButtonLink>
+                            <ButtonLink href="/chat" variant="ghost">
+                                Go to Chat
+                            </ButtonLink>
+                        </div>
+                    }
+                />
 
-                <div className="bg-white rounded-lg shadow-lg p-8">
-                    <PDFUpload />
-                </div>
+                <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+                    <Surface className="p-6 sm:p-7">
+                        <Badge tone="info">Phase 2 + Phase 3</Badge>
+                        <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950">
+                            A single upload triggers the full indexing pipeline.
+                        </h2>
+                        <p className="mt-3 text-sm leading-7 text-slate-600">
+                            The upload flow extracts text, chunks the content semantically, generates embeddings, and stores the document in PostgreSQL with pgvector for retrieval.
+                        </p>
 
-                <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-200">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                        Full Pipeline (Phase 2 + Phase 3)
-                    </h3>
-                    <ul className="text-gray-700 space-y-2 text-sm">
-                        <li>✓ Upload any PDF document (max 10MB)</li>
-                        <li>✓ Automatic text extraction from all pages</li>
-                        <li>✓ Semantic chunking into 300-500 word segments</li>
-                        <li>✓ Embedding generation using all-MiniLM-L6-v2</li>
-                        <li>✓ Persistent storage in PostgreSQL with pgvector</li>
-                        <li>✓ Ready for Phase 4: RAG System</li>
-                    </ul>
+                        <div className="mt-6 space-y-3">
+                            {[
+                                "Upload any PDF document (max 10MB)",
+                                "Automatic extraction from all pages",
+                                "Semantic chunking into 300-500 word segments",
+                                "Embedding generation using all-MiniLM-L6-v2",
+                                "Persistent storage in PostgreSQL with pgvector",
+                            ].map((item) => (
+                                <div key={item} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-700">
+                                    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                                        ✓
+                                    </span>
+                                    <span className="leading-6">{item}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </Surface>
+
+                    <Surface className="p-4 sm:p-6">
+                        <PDFUpload />
+                    </Surface>
                 </div>
-            </div>
-        </div>
+            </AppContainer>
+        </AppShell>
     )
 }

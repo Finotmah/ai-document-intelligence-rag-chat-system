@@ -5,6 +5,29 @@ import { UploadResponse } from "@/app/types/upload"
 
 export const runtime = "nodejs"
 
+function getErrorCode(error: unknown): string {
+  if (!error || typeof error !== "object") {
+    return ""
+  }
+
+  const candidate = error as { code?: unknown; message?: unknown; errors?: unknown }
+
+  if (typeof candidate.code === "string") {
+    return candidate.code
+  }
+
+  if (Array.isArray(candidate.errors)) {
+    for (const nestedError of candidate.errors) {
+      const nestedCode = getErrorCode(nestedError)
+      if (nestedCode) {
+        return nestedCode
+      }
+    }
+  }
+
+  return ""
+}
+
 export async function POST(req: Request): Promise<Response> {
   try {
     // Parse FormData
@@ -65,15 +88,21 @@ export async function POST(req: Request): Promise<Response> {
       const ingestMessage = ingestError instanceof Error ? ingestError.message : "Unknown ingest error"
       console.error("Phase 3 ingest failed:", ingestMessage)
 
+      const ingestCode = getErrorCode(ingestError)
+      const isDatabaseUnavailable = ingestCode === "ECONNREFUSED"
+      const status = isDatabaseUnavailable ? 503 : 500
+
       return Response.json(
         {
           success: false,
           error: {
-            code: "INGEST_ERROR",
-            message: `PDF was extracted, but indexing failed: ${ingestMessage}`,
+            code: isDatabaseUnavailable ? "DATABASE_UNAVAILABLE" : "INGEST_ERROR",
+            message: isDatabaseUnavailable
+              ? "PDF was extracted, but PostgreSQL is unavailable. Start the database and try again."
+              : `PDF was extracted, but indexing failed: ${ingestMessage}`,
           },
         } as UploadResponse,
-        { status: 500 }
+        { status }
       )
     }
 

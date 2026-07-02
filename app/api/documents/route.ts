@@ -45,6 +45,20 @@ export async function GET(): Promise<Response> {
       })),
     })
   } catch (error: unknown) {
+    const errorCode =
+      error instanceof Error && "code" in error
+        ? String((error as { code?: unknown }).code)
+        : ""
+
+    if (errorCode === "ECONNREFUSED") {
+      console.warn("Document list unavailable: PostgreSQL connection refused")
+
+      return Response.json({
+        documents: [],
+        warning: "Document storage is unavailable. Start PostgreSQL to load saved documents.",
+      })
+    }
+
     console.error("Document list error:", error)
 
     return Response.json(

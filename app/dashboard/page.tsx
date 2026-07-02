@@ -1,6 +1,20 @@
 "use client"
 
 import { useState, useEffect, type ReactElement } from "react"
+import {
+    AppContainer,
+    AppShell,
+    Badge,
+    Button,
+    ButtonLink,
+    EmptyState,
+    PageHeader,
+    SectionHeading,
+    Surface,
+    StatCard,
+    ProgressBar,
+    TextArea,
+} from "@/app/components/ui"
 
 interface ChatSource {
     documentId: string
@@ -15,9 +29,16 @@ interface UploadedDocument {
     fileSize: number
     uploadedAt: string
     updatedAt?: string
+    pageCount?: number | null
     chunkCount: number
     sourceType?: string
     status: "processing" | "ready" | "error"
+}
+
+type DocumentListResponse = {
+    documents?: UploadedDocument[]
+    warning?: string
+    error?: string
 }
 
 function MarkdownContent({ content }: { content: string }) {
@@ -132,6 +153,7 @@ export default function DashboardPage() {
     const [documents, setDocuments] = useState<UploadedDocument[]>([])
     const [documentsLoading, setDocumentsLoading] = useState(false)
     const [documentsError, setDocumentsError] = useState("")
+    const [documentsWarning, setDocumentsWarning] = useState("")
 
     // Load documents on mount
     useEffect(() => {
@@ -141,19 +163,23 @@ export default function DashboardPage() {
     async function loadDocuments() {
         setDocumentsLoading(true)
         setDocumentsError("")
+        setDocumentsWarning("")
 
         try {
             const res = await fetch("/api/documents", {
                 cache: "no-store",
             })
 
-            const data = await readResponseData(res)
+            const data = (await readResponseData(res)) as DocumentListResponse
 
             if (!res.ok) {
                 throw new Error(data.error || "Failed to load documents")
             }
 
             setDocuments(Array.isArray(data.documents) ? data.documents : [])
+            if (data.warning) {
+                setDocumentsWarning(data.warning)
+            }
         } catch (error) {
             setDocuments([])
             setDocumentsError(error instanceof Error ? error.message : "Failed to load documents")
@@ -283,242 +309,262 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.12),_transparent_28%),linear-gradient(180deg,_#eff6ff_0%,_#f8fafc_24%,_#f8fafc_100%)] flex flex-col overflow-hidden">
-            {/* Header */}
-            <header className="bg-white/90 backdrop-blur border-b border-slate-200 shadow-sm px-6 py-4 sticky top-0 z-20">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-900">AI Document Intelligence & RAG Chat System Dashboard</h1>
-                        <p className="text-sm text-slate-600 mt-1">Upload documents and ask intelligent questions</p>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-2xl font-bold text-emerald-600">{documents.length}</p>
-                        <p className="text-xs text-slate-600">Documents uploaded</p>
-                    </div>
-                </div>
-            </header>
-
-            {/* Main Content */}
-            <div className="flex-1 overflow-hidden flex gap-6 p-6">
-                {/* Left Panel: Upload */}
-                <div className="w-96 flex flex-col gap-4 overflow-y-auto">
-                    {/* Upload Card */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                        <h2 className="text-lg font-bold text-slate-900 mb-4">📄 Upload Document</h2>
-
-                        {/* File Input */}
-                        <div className="mb-4">
-                            <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                Choose PDFs
-                            </label>
-                            <input
-                                type="file"
-                                accept=".pdf"
-                                multiple
-                                onChange={(e) => setUploadFiles(Array.from(e.target.files || []))}
-                                disabled={uploadLoading}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:bg-slate-100 disabled:cursor-not-allowed"
-                            />
-                            <p className="text-xs text-slate-600 mt-1">
-                                {uploadFiles.length > 0
-                                    ? `${uploadFiles.length} file${uploadFiles.length !== 1 ? "s" : ""} selected`
-                                    : "Select one or more PDFs (Max 10MB each)"}
-                            </p>
+        <AppShell>
+            <AppContainer className="py-6 sm:py-8 lg:py-10">
+                <PageHeader
+                    eyebrow="Dashboard"
+                    title="Upload, index, and chat from a single workspace"
+                    description="Manage documents, monitor indexing, and ask grounded questions without leaving the dashboard."
+                    actions={
+                        <div className="flex flex-wrap gap-3">
+                            <ButtonLink href="/upload" variant="secondary">
+                                Upload page
+                            </ButtonLink>
+                            <ButtonLink href="/chat" variant="ghost">
+                                Focused chat
+                            </ButtonLink>
                         </div>
+                    }
+                />
 
-                        {/* Selected Files Preview */}
-                        {uploadFiles.length > 0 && (
-                            <div className="mb-4 space-y-2 max-h-32 overflow-y-auto">
-                                {uploadFiles.map((file) => (
-                                    <div
-                                        key={file.name}
-                                        className="flex items-center justify-between bg-slate-50 p-2 rounded border border-slate-200 text-xs"
-                                    >
-                                        <span className="text-slate-700 truncate flex-1">{file.name}</span>
-                                        <span className="text-slate-600 ml-2">
-                                            {(file.size / 1024 / 1024).toFixed(1)}MB
-                                        </span>
-                                        {uploadProgress[file.name] === 100 && (
-                                            <span className="text-emerald-600 ml-2">✓</span>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Upload Button */}
-                        <button
-                            onClick={handleUpload}
-                            disabled={uploadFiles.length === 0 || uploadLoading}
-                            className="w-full bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
-                        >
-                            {uploadLoading ? `Uploading... (${uploadedCount}/${uploadFiles.length})` : `Upload ${uploadFiles.length > 0 ? uploadFiles.length : ""} PDF${uploadFiles.length !== 1 ? "s" : ""}`}
-                        </button>
-
-                        {/* Error/Success Message */}
-                        {uploadError && (
-                            <div className={`mt-4 rounded-lg p-3 border ${uploadError.includes("Uploaded") && uploadError.includes("0/") ? "bg-red-50 border-red-200" : uploadError.includes("Uploaded") ? "bg-blue-50 border-blue-200" : "bg-red-50 border-red-200"}`}>
-                                <p className={`text-sm font-medium ${uploadError.includes("Uploaded") && uploadError.includes("0/") ? "text-red-700" : uploadError.includes("Uploaded") ? "text-blue-700" : "text-red-700"}`}>
-                                    {uploadError.includes("Uploaded") ? "Upload Summary" : "Error"}
-                                </p>
-                                <p className={`text-xs mt-1 ${uploadError.includes("Uploaded") && uploadError.includes("0/") ? "text-red-600" : uploadError.includes("Uploaded") ? "text-blue-600" : "text-red-600"}`}>
-                                    {uploadError}
-                                </p>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Documents List */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex-1 overflow-y-auto">
-                        <h2 className="text-lg font-bold text-slate-900 mb-4">📚 Your Documents</h2>
-
-                        {documentsLoading && (
-                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                                Loading documents...
-                            </div>
-                        )}
-
-                        {documentsError && (
-                            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                                {documentsError}
-                            </div>
-                        )}
-
-                        {!documentsLoading && documents.length === 0 ? (
-                            <div className="text-center py-8">
-                                <p className="text-slate-600 text-sm mb-2">No documents uploaded yet</p>
-                                <p className="text-slate-500 text-xs">Upload a PDF to get started</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {documents.map((doc) => (
-                                    <div
-                                        key={doc.id}
-                                        className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-slate-300 transition"
-                                    >
-                                        <div className="flex items-start justify-between mb-2">
-                                            <div className="flex-1">
-                                                <p className="font-medium text-slate-900 text-sm truncate">
-                                                    {doc.fileName}
-                                                </p>
-                                                <p className="text-xs text-slate-600 mt-1">
-                                                    {doc.chunkCount} chunks • {new Date(doc.uploadedAt).toLocaleDateString()}
-                                                </p>
-                                            </div>
-                                            <span
-                                                className={`text-xs font-semibold px-2 py-1 rounded ${
-                                                    doc.status === "ready"
-                                                        ? "bg-emerald-100 text-emerald-800"
-                                                        : doc.status === "processing"
-                                                          ? "bg-blue-100 text-blue-800"
-                                                          : "bg-red-100 text-red-800"
-                                                }`}
-                                            >
-                                                {doc.status}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <StatCard label="Documents indexed" value={String(documents.length)} helperText="Stored documents currently available for retrieval" />
+                    <StatCard label="Selected files" value={String(uploadFiles.length)} helperText="Files waiting to be uploaded" />
+                    <StatCard label="Upload status" value={uploadLoading ? "Uploading" : "Idle"} helperText="Current upload activity" />
+                    <StatCard label="Chat status" value={chatLoading ? "Thinking" : "Ready"} helperText="Current assistant state" />
                 </div>
 
-                {/* Right Panel: Chat */}
-                <div className="flex-1 flex flex-col gap-4 overflow-hidden">
-                    {/* Response Area */}
-                    <div className="flex-1 overflow-y-auto">
-                        {chatLoading && (
-                            <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
-                                <div className="flex items-center">
-                                    <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full mr-3"></div>
-                                    <p className="text-blue-900 font-medium">Thinking...</p>
-                                </div>
-                            </div>
-                        )}
+                <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.02fr)_minmax(0,1.35fr)]">
+                    <div className="space-y-6">
+                        <Surface className="p-6">
+                            <SectionHeading
+                                title="Upload documents"
+                                description="Choose one or more PDFs and let the system process them in the background."
+                            />
 
-                        {chatError && (
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                                <p className="text-red-900 font-semibold mb-1">Error</p>
-                                <p className="text-red-700 text-sm">{chatError}</p>
-                            </div>
-                        )}
-
-                        {reply && (
-                            <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 space-y-4">
+                            <div className="mt-5 space-y-4">
                                 <div>
-                                    <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">
-                                        Response
-                                    </h2>
-                                    <MarkdownContent content={reply} />
+                                    <label className="mb-2 block text-sm font-medium text-slate-800">
+                                        Choose PDFs
+                                    </label>
+                                    <input
+                                        type="file"
+                                        accept=".pdf"
+                                        multiple
+                                        onChange={(e) => setUploadFiles(Array.from(e.target.files || []))}
+                                        disabled={uploadLoading}
+                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm transition file:mr-4 file:rounded-full file:border-0 file:bg-slate-950 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:border-slate-300 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 disabled:bg-slate-50 disabled:text-slate-400"
+                                    />
+                                    <p className="mt-2 text-xs text-slate-500">
+                                        {uploadFiles.length > 0
+                                            ? `${uploadFiles.length} file${uploadFiles.length !== 1 ? "s" : ""} selected`
+                                            : "Select one or more PDFs (Max 10MB each)"}
+                                    </p>
                                 </div>
 
-                                {/* Sources */}
-                                {sources.length > 0 && (
-                                    <div className="mt-6 pt-6 border-t border-slate-200">
-                                        <h3 className="text-sm font-semibold text-slate-700 mb-4">
-                                            📚 Retrieved Sources ({sources.length})
-                                        </h3>
-                                        <div className="space-y-3 max-h-48 overflow-y-auto">
-                                            {sources.map((source, index) => (
-                                                <div
-                                                    key={`${source.documentId}-${source.chunkIndex}-${index}`}
-                                                    className="bg-slate-50 rounded-lg p-3 border border-slate-200 hover:border-slate-300 transition"
-                                                >
-                                                    <div className="flex items-start justify-between mb-1">
-                                                        <p className="font-medium text-slate-900 text-sm">
-                                                            {source.sourceFileName}
-                                                        </p>
-                                                        <span className="inline-block bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-0.5 rounded">
-                                                            {(source.similarity * 100).toFixed(0)}%
-                                                        </span>
+                                {uploadFiles.length > 0 ? (
+                                    <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
+                                        {uploadFiles.map((file) => (
+                                            <div key={file.name} className="rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="truncate text-sm font-medium text-slate-950">{file.name}</p>
+                                                        <p className="mt-1 text-xs text-slate-500">{(file.size / 1024 / 1024).toFixed(1)} MB</p>
                                                     </div>
-                                                    <p className="text-xs text-slate-600">
-                                                        Chunk #{source.chunkIndex}
-                                                    </p>
+                                                    <Badge tone={uploadProgress[file.name] === 100 ? "success" : "neutral"}>
+                                                        {uploadProgress[file.name] === 100 ? "Done" : "Queued"}
+                                                    </Badge>
                                                 </div>
-                                            ))}
-                                        </div>
+                                                <div className="mt-3">
+                                                    <ProgressBar value={uploadProgress[file.name] ?? 0} />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : null}
+
+                                <Button
+                                    onClick={handleUpload}
+                                    disabled={uploadFiles.length === 0 || uploadLoading}
+                                    className="w-full"
+                                >
+                                    {uploadLoading ? `Uploading... (${uploadedCount}/${uploadFiles.length})` : `Upload ${uploadFiles.length > 0 ? uploadFiles.length : ""} PDF${uploadFiles.length !== 1 ? "s" : ""}`}
+                                </Button>
+
+                                {uploadError ? (
+                                    <div className={`rounded-2xl border p-4 ${uploadError.includes("Uploaded") && uploadError.includes("0/") ? "border-rose-200 bg-rose-50/70" : uploadError.includes("Uploaded") ? "border-indigo-200 bg-indigo-50/70" : "border-rose-200 bg-rose-50/70"}`}>
+                                        <p className={`text-sm font-medium ${uploadError.includes("Uploaded") && uploadError.includes("0/") ? "text-rose-900" : uploadError.includes("Uploaded") ? "text-indigo-900" : "text-rose-900"}`}>
+                                            {uploadError.includes("Uploaded") ? "Upload summary" : "Upload error"}
+                                        </p>
+                                        <p className={`mt-1 text-xs leading-6 ${uploadError.includes("Uploaded") && uploadError.includes("0/") ? "text-rose-700" : uploadError.includes("Uploaded") ? "text-indigo-700" : "text-rose-700"}`}>
+                                            {uploadError}
+                                        </p>
+                                    </div>
+                                ) : null}
+                            </div>
+                        </Surface>
+
+                        <Surface className="p-6">
+                            <SectionHeading
+                                title="Document library"
+                                description="Recently indexed files and their current availability for retrieval."
+                            />
+
+                            <div className="mt-5 space-y-4">
+                                {documentsLoading ? (
+                                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-4 text-sm text-slate-600">
+                                        Loading documents...
+                                    </div>
+                                ) : null}
+
+                                {documentsError ? (
+                                    <div className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-4 text-sm text-amber-800">
+                                        {documentsError}
+                                    </div>
+                                ) : null}
+
+                                {documentsWarning ? (
+                                    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4 text-sm text-slate-600">
+                                        {documentsWarning}
+                                    </div>
+                                ) : null}
+
+                                {!documentsLoading && documents.length === 0 ? (
+                                    <EmptyState
+                                        title="No documents yet"
+                                        description="Upload a PDF to populate the library and make the chat experience useful."
+                                    />
+                                ) : (
+                                    <div className="space-y-3">
+                                        {documents.map((doc) => (
+                                            <article key={doc.id} className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 transition hover:border-slate-300 hover:bg-slate-50">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="truncate text-sm font-medium text-slate-950">{doc.fileName}</p>
+                                                        <p className="mt-1 text-xs text-slate-500">
+                                                            {doc.chunkCount} chunks • {doc.pageCount ?? "?"} pages • {new Date(doc.uploadedAt).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                    <Badge tone={doc.status === "ready" ? "success" : doc.status === "processing" ? "info" : "danger"}>
+                                                        {doc.status}
+                                                    </Badge>
+                                                </div>
+                                            </article>
+                                        ))}
                                     </div>
                                 )}
                             </div>
-                        )}
-
-                        {!reply && !chatError && !chatLoading && (
-                            <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 text-center">
-                                <p className="text-slate-600 text-sm">
-                                    💡 Ask a question about your uploaded documents
-                                </p>
-                            </div>
-                        )}
+                        </Surface>
                     </div>
 
-                    {/* Chat Input */}
-                    <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
-                        <textarea
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            onKeyPress={handleKeyPress}
-                            placeholder="Ask a question about your documents..."
-                            disabled={chatLoading}
-                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:bg-slate-100 disabled:cursor-not-allowed text-sm"
-                            rows={3}
-                        />
-                        <div className="flex items-center justify-between mt-3">
-                            <p className="text-xs text-slate-600">
-                                Press <kbd className="px-1.5 py-0.5 bg-slate-200 rounded text-slate-900 font-mono text-xs">Enter</kbd> to send, <kbd className="px-1.5 py-0.5 bg-slate-200 rounded text-slate-900 font-mono text-xs">Shift+Enter</kbd> for new line
-                            </p>
-                            <button
-                                onClick={sendMessage}
-                                disabled={chatLoading || !message.trim()}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition text-sm"
-                            >
-                                Send
-                            </button>
-                        </div>
+                    <div className="space-y-6">
+                        <Surface className="p-6">
+                            <SectionHeading
+                                title="Chat with indexed documents"
+                                description="Ask questions based on the currently indexed library and review the retrieved sources below the answer."
+                            />
+
+                            <div className="mt-5 space-y-4">
+                                {chatLoading ? (
+                                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-950" />
+                                            <div>
+                                                <p className="text-sm font-medium text-slate-950">Thinking</p>
+                                                <p className="text-sm text-slate-600">Retrieving relevant chunks and generating a response.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : null}
+
+                                {chatError ? (
+                                    <div className="rounded-2xl border border-rose-200 bg-rose-50/70 px-4 py-4">
+                                        <p className="text-sm font-semibold text-rose-900">Response failed</p>
+                                        <p className="mt-1 text-sm leading-6 text-rose-700">{chatError}</p>
+                                    </div>
+                                ) : null}
+
+                                {reply ? (
+                                    <div className="rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
+                                        <div className="border-b border-slate-200 px-5 py-4 sm:px-6">
+                                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                                <div>
+                                                    <p className="text-xs font-semibold uppercase tracking-[0.32em] text-slate-500">Response</p>
+                                                    <h2 className="mt-1 text-lg font-semibold tracking-tight text-slate-950">Grounded answer</h2>
+                                                </div>
+                                                <Badge tone="success">Retrieved context used</Badge>
+                                            </div>
+                                        </div>
+
+                                        <div className="px-5 py-5 sm:px-6">
+                                            <MarkdownContent content={reply} />
+                                        </div>
+
+                                        {sources.length > 0 ? (
+                                            <div className="border-t border-slate-200 bg-slate-50/80 px-5 py-5 sm:px-6">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <h3 className="text-sm font-semibold tracking-tight text-slate-950">Retrieved sources</h3>
+                                                    <Badge tone="info">{sources.length} matches</Badge>
+                                                </div>
+
+                                                <div className="mt-4 space-y-3 max-h-72 overflow-y-auto pr-1">
+                                                    {sources.map((source, index) => (
+                                                        <div key={`${source.documentId}-${source.chunkIndex}-${index}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+                                                            <div className="flex items-start justify-between gap-4">
+                                                                <div className="min-w-0 flex-1">
+                                                                    <p className="truncate text-sm font-medium text-slate-950">{source.sourceFileName}</p>
+                                                                    <p className="mt-1 text-xs text-slate-500">
+                                                                        Chunk #{source.chunkIndex} • Relevance {(source.similarity * 100).toFixed(0)}%
+                                                                    </p>
+                                                                </div>
+                                                                <Badge tone="neutral">Source {index + 1}</Badge>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                ) : (
+                                    <EmptyState
+                                        title="No response yet"
+                                        description="Ask a question to see the assistant response and retrieved sources in this workspace."
+                                    />
+                                )}
+                            </div>
+                        </Surface>
+
+                        <Surface className="p-6">
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between gap-3">
+                                    <label className="text-sm font-medium text-slate-800" htmlFor="dashboard-chat-message">
+                                        Your question
+                                    </label>
+                                    <span className="text-xs text-slate-500">Shift+Enter for a new line</span>
+                                </div>
+                                <TextArea
+                                    id="dashboard-chat-message"
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    onKeyPress={handleKeyPress}
+                                    placeholder="Ask a question about your documents..."
+                                    disabled={chatLoading}
+                                    rows={4}
+                                />
+                            </div>
+
+                            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <p className="text-xs leading-6 text-slate-500">
+                                    Use precise questions to improve retrieval quality and answer relevance.
+                                </p>
+                                <Button onClick={sendMessage} disabled={chatLoading || !message.trim()} className="w-full sm:w-auto sm:px-6">
+                                    Send message
+                                </Button>
+                            </div>
+                        </Surface>
                     </div>
                 </div>
-            </div>
-        </div>
+            </AppContainer>
+        </AppShell>
     )
 }

@@ -2,6 +2,15 @@
 
 import { useState, useRef } from "react"
 import { UploadResponse } from "@/app/types/upload"
+import {
+    Badge,
+    Button,
+    EmptyState,
+    FieldLabel,
+    ProgressBar,
+    SectionHeading,
+    Surface,
+} from "@/app/components/ui"
 
 export default function PDFUpload() {
     const [loading, setLoading] = useState(false)
@@ -77,20 +86,13 @@ export default function PDFUpload() {
     }
 
     return (
-        <div className="w-full max-w-2xl mx-auto">
-            <h2 className="text-2xl font-bold mb-6">Upload PDF Document</h2>
+        <div className="space-y-6">
+            <SectionHeading
+                title="Upload a PDF"
+                description="Files are extracted, chunked, embedded, and stored automatically for downstream retrieval."
+            />
 
-            {/* Upload Area */}
-            <div
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition ${dragActive
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 hover:border-gray-400"
-                    } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
+            <Surface className={dragActive ? "border-indigo-300 ring-4 ring-indigo-500/10" : undefined}>
                 <input
                     ref={fileInputRef}
                     type="file"
@@ -100,121 +102,154 @@ export default function PDFUpload() {
                     className="hidden"
                 />
 
-                <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={loading}
-                    className="w-full"
+                <div
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
+                    className={`rounded-[1.5rem] border-2 border-dashed px-6 py-10 text-center transition sm:px-8 ${dragActive
+                            ? "border-indigo-300 bg-indigo-50/60"
+                            : "border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-slate-50"
+                        } ${loading ? "opacity-70" : "cursor-pointer"}`}
                 >
-                    <svg
-                        className="mx-auto h-12 w-12 text-gray-400 mb-4"
-                        stroke="currentColor"
-                        fill="none"
-                        viewBox="0 0 48 48"
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={loading}
+                        className="flex w-full flex-col items-center justify-center gap-4"
                     >
-                        <path
-                            d="M28 8H12a4 4 0 00-4 4v24a4 4 0 004 4h24a4 4 0 004-4V20m-14-8v16m0 0l-4-4m4 4l4-4"
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        />
-                    </svg>
+                        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-slate-200">
+                            <svg className="h-7 w-7" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                <path
+                                    d="M28 8H12a4 4 0 00-4 4v24a4 4 0 004 4h24a4 4 0 004-4V20m-14-8v16m0 0l-4-4m4 4l4-4"
+                                    strokeWidth={2}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
+                            </svg>
+                        </span>
 
-                    <p className="text-lg font-semibold text-gray-700 mb-2">
-                        {loading ? "Processing..." : "Drag and drop your PDF here"}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                        or click to browse (Max 10MB)
-                    </p>
-                </button>
-            </div>
+                        <div className="space-y-2">
+                            <p className="text-lg font-semibold tracking-tight text-slate-950">
+                                {loading ? "Processing PDF..." : "Drag and drop your PDF here"}
+                            </p>
+                            <p className="text-sm leading-6 text-slate-600">
+                                or click to browse. The file will be indexed automatically for RAG.
+                            </p>
+                        </div>
 
-            {/* Error Message */}
-            {error && (
-                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-800 font-semibold">Error</p>
-                    <p className="text-red-700 text-sm">{error}</p>
+                        <Badge tone="neutral">Max 10MB</Badge>
+                    </button>
                 </div>
-            )}
+            </Surface>
 
-            {/* Success Message */}
-            {uploadedFile && uploadedFile.data && (
-                <div className="mt-6 space-y-4">
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <p className="text-green-800 font-semibold">✓ Upload Successful</p>
-                        <p className="text-green-700 text-sm">PDF processed successfully</p>
+            {error ? (
+                <Surface className="border-rose-200 bg-rose-50/70 p-5">
+                    <div className="flex items-start gap-3">
+                        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-700">
+                            !
+                        </span>
+                        <div>
+                            <p className="text-sm font-semibold text-rose-900">Upload failed</p>
+                            <p className="mt-1 text-sm leading-6 text-rose-700">{error}</p>
+                        </div>
                     </div>
+                </Surface>
+            ) : null}
 
-                    {/* File Details */}
-                    <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
-                        <div>
-                            <p className="text-sm font-semibold text-gray-600">File Name</p>
-                            <p className="text-gray-800">{uploadedFile.data.fileName}</p>
-                        </div>
-
-                        <div>
-                            <p className="text-sm font-semibold text-gray-600">File Size</p>
-                            <p className="text-gray-800">
-                                {(uploadedFile.data.fileSize / 1024).toFixed(2)} KB
-                            </p>
-                        </div>
-
-                        <div>
-                            <p className="text-sm font-semibold text-gray-600">Pages</p>
-                            <p className="text-gray-800">{uploadedFile.data.pageCount}</p>
-                        </div>
-
-                        <div>
-                            <p className="text-sm font-semibold text-gray-600">
-                                Extracted Text Preview
-                            </p>
-                            <div className="mt-2 p-3 bg-white border border-gray-200 rounded max-h-48 overflow-y-auto">
-                                <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                                    {uploadedFile.data.extractedText.substring(0, 500)}
-                                    {uploadedFile.data.extractedText.length > 500 && "..."}
+            {uploadedFile && uploadedFile.data ? (
+                <div className="space-y-6">
+                    <Surface className="border-emerald-200 bg-emerald-50/60 p-5">
+                        <div className="flex items-start gap-3">
+                            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                                ✓
+                            </span>
+                            <div>
+                                <p className="text-sm font-semibold text-emerald-900">Upload successful</p>
+                                <p className="mt-1 text-sm leading-6 text-emerald-700">
+                                    PDF processed successfully and is ready for question answering.
                                 </p>
                             </div>
                         </div>
+                    </Surface>
 
-                        <div>
-                            <p className="text-sm font-semibold text-gray-600">Uploaded At</p>
-                            <p className="text-gray-800 text-sm">
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+                            <p className="text-xs font-medium uppercase tracking-[0.28em] text-slate-500">File name</p>
+                            <p className="mt-2 break-words text-sm font-medium text-slate-950">{uploadedFile.data.fileName}</p>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+                            <p className="text-xs font-medium uppercase tracking-[0.28em] text-slate-500">File size</p>
+                            <p className="mt-2 text-sm font-medium text-slate-950">
+                                {(uploadedFile.data.fileSize / 1024).toFixed(2)} KB
+                            </p>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+                            <p className="text-xs font-medium uppercase tracking-[0.28em] text-slate-500">Pages</p>
+                            <p className="mt-2 text-sm font-medium text-slate-950">{uploadedFile.data.pageCount}</p>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+                            <p className="text-xs font-medium uppercase tracking-[0.28em] text-slate-500">Uploaded at</p>
+                            <p className="mt-2 text-sm font-medium text-slate-950">
                                 {new Date(uploadedFile.data.uploadedAt).toLocaleString()}
                             </p>
                         </div>
                     </div>
 
-                    {uploadedFile.data.ingest && (
-                        <div className="mt-6 space-y-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                            <div>
-                                <p className="text-lg font-semibold text-purple-900 mb-3">✓ Phase 3: Document Ingestion Complete</p>
-                                <div className="space-y-3">
-                                    <div>
-                                        <p className="text-sm font-semibold text-purple-700">Document ID</p>
-                                        <p className="text-purple-900 text-xs font-mono break-all mt-1">{uploadedFile.data.ingest.documentId}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-purple-700">Semantic Chunks Generated</p>
-                                        <p className="text-purple-900 mt-1">{uploadedFile.data.ingest.chunkCount} chunks (300-500 words each)</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-purple-700">Embedding Model</p>
-                                        <p className="text-purple-900 text-xs mt-1">{uploadedFile.data.ingest.embeddingModel}</p>
-                                    </div>
-                                </div>
-                                <p className="text-xs text-purple-700 mt-4">✓ Stored in PostgreSQL with pgvector embeddings for RAG</p>
-                            </div>
+                    <Surface className="p-5">
+                        <FieldLabel hint="Preview">Extracted text preview</FieldLabel>
+                        <div className="mt-3 max-h-52 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                            <p className="whitespace-pre-wrap text-sm leading-7 text-slate-600">
+                                {uploadedFile.data.extractedText.substring(0, 500)}
+                                {uploadedFile.data.extractedText.length > 500 && "..."}
+                            </p>
                         </div>
-                    )}
+                    </Surface>
 
-                    <div className="mt-6">
-                    <button
-                        onClick={resetUpload}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition"
-                    >
-                        Upload Another PDF
-                    </button>
+                    {uploadedFile.data.ingest ? (
+                        <Surface className="border-indigo-200 bg-indigo-50/60 p-5">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <p className="text-sm font-semibold text-indigo-900">Indexing complete</p>
+                                    <p className="mt-1 text-sm leading-6 text-indigo-700">
+                                        The document has been embedded and stored in PostgreSQL with pgvector for retrieval.
+                                    </p>
+                                </div>
+                                <Badge tone="info">RAG-ready</Badge>
+                            </div>
+
+                            <div className="mt-5 grid gap-4 sm:grid-cols-3">
+                                <div className="rounded-2xl border border-indigo-200 bg-white/80 px-4 py-4">
+                                    <p className="text-xs font-medium uppercase tracking-[0.28em] text-indigo-500">Document ID</p>
+                                    <p className="mt-2 break-all text-xs leading-6 text-slate-700">{uploadedFile.data.ingest.documentId}</p>
+                                </div>
+                                <div className="rounded-2xl border border-indigo-200 bg-white/80 px-4 py-4">
+                                    <p className="text-xs font-medium uppercase tracking-[0.28em] text-indigo-500">Chunks</p>
+                                    <p className="mt-2 text-sm font-medium text-slate-950">
+                                        {uploadedFile.data.ingest.chunkCount} semantic chunks
+                                    </p>
+                                </div>
+                                <div className="rounded-2xl border border-indigo-200 bg-white/80 px-4 py-4">
+                                    <p className="text-xs font-medium uppercase tracking-[0.28em] text-indigo-500">Embedding model</p>
+                                    <p className="mt-2 break-words text-xs leading-6 text-slate-700">{uploadedFile.data.ingest.embeddingModel}</p>
+                                </div>
+                            </div>
+                        </Surface>
+                    ) : null}
+
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                        <Button onClick={resetUpload} className="w-full sm:w-auto sm:flex-1">
+                            Upload another PDF
+                        </Button>
+                        <Button variant="secondary" onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto sm:flex-1">
+                            Choose another file
+                        </Button>
                     </div>
                 </div>
+            ) : (
+                <EmptyState
+                    title="No upload yet"
+                    description="Choose a PDF to see extraction, chunking, and indexing details here."
+                />
             )}
         </div>
     )

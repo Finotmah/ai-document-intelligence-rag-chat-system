@@ -1,6 +1,18 @@
 "use client"
 
 import { useState, type ReactElement } from "react"
+import {
+    AppContainer,
+    AppShell,
+    Badge,
+    Button,
+    ButtonLink,
+    EmptyState,
+    PageHeader,
+    SectionHeading,
+    Surface,
+    TextArea,
+} from "@/app/components/ui"
 
 interface ChatSource {
     documentId: string
@@ -175,106 +187,173 @@ export default function ChatPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-            {/* Header */}
-            <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <h1 className="text-2xl font-bold text-slate-900">AI Document Intelligence & RAG Chat System</h1>
-                    <p className="text-sm text-slate-600 mt-1">Ask questions about your uploaded documents</p>
-                </div>
-            </header>
+        <AppShell>
+            <AppContainer className="py-6 sm:py-8 lg:py-10">
+                <PageHeader
+                    eyebrow="Chat"
+                    title="Ask questions across your indexed documents"
+                    description="Responses are grounded in your uploaded PDFs and include retrieved source references for transparency."
+                    actions={
+                        <div className="flex flex-wrap gap-3">
+                            <ButtonLink href="/upload" variant="secondary">
+                                Upload more PDFs
+                            </ButtonLink>
+                            <ButtonLink href="/dashboard" variant="ghost">
+                                Open Dashboard
+                            </ButtonLink>
+                        </div>
+                    }
+                />
 
-            {/* Main Content */}
-            <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Chat Messages */}
-                <div className="space-y-6 mb-8">
-                    {reply && (
-                        <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
-                            <div className="mb-4">
-                                <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
-                                    Response
-                                </h2>
-                                <MarkdownContent content={reply} />
+                <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(280px,320px)_minmax(0,1fr)]">
+                    <div className="space-y-6">
+                        <Surface className="p-6">
+                            <SectionHeading
+                                title="How to use chat"
+                                description="Upload a document first, then ask targeted questions to retrieve grounded answers."
+                            />
+
+                            <div className="mt-5 space-y-3">
+                                {[
+                                    "Ask concise, document-specific questions",
+                                    "Use follow-ups to refine the answer",
+                                    "Review the source cards to verify the response",
+                                ].map((item) => (
+                                    <div key={item} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-700">
+                                        <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-950 text-[10px] font-semibold text-white">
+                                            ✓
+                                        </span>
+                                        <span className="leading-6">{item}</span>
+                                    </div>
+                                ))}
                             </div>
+                        </Surface>
 
-                            {/* Sources */}
-                            {sources.length > 0 && (
-                                <div className="mt-6 pt-6 border-t border-slate-200">
-                                    <h3 className="text-sm font-semibold text-slate-700 mb-4">
-                                        📚 Retrieved Sources ({sources.length})
-                                    </h3>
-                                    <div className="space-y-3">
-                                        {sources.map((source, index) => (
-                                            <div
-                                                key={`${source.documentId}-${source.chunkIndex}-${index}`}
-                                                className="bg-slate-50 rounded-lg p-4 border border-slate-200 hover:border-slate-300 transition"
-                                            >
-                                                <div className="flex items-start justify-between mb-2">
-                                                    <div>
-                                                        <p className="font-medium text-slate-900">{source.sourceFileName}</p>
-                                                        <p className="text-xs text-slate-600 mt-1">
-                                                            Chunk #{source.chunkIndex} • Relevance:{" "}
-                                                            <span className="font-semibold">
-                                                                {(source.similarity * 100).toFixed(0)}%
-                                                            </span>
-                                                        </p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <span className="inline-block bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-1 rounded">
-                                                            Source {index + 1}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
+                        <Surface className="p-6">
+                            <SectionHeading title="Need a quick start?" description="Try a question that references the document structure, summary, or a section name." />
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                <Badge tone="neutral">Summarize the document</Badge>
+                                <Badge tone="neutral">List the main sections</Badge>
+                                <Badge tone="neutral">What are the key findings?</Badge>
+                            </div>
+                        </Surface>
+                    </div>
+
+                    <div className="space-y-6">
+                        {loading ? (
+                            <Surface className="p-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-300 border-t-slate-950" />
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-950">Thinking</p>
+                                        <p className="text-sm text-slate-600">Retrieving relevant chunks and generating a grounded response.</p>
                                     </div>
                                 </div>
-                            )}
-                        </div>
-                    )}
+                            </Surface>
+                        ) : null}
 
-                    {error && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                            <p className="text-red-900 font-semibold mb-1">Error</p>
-                            <p className="text-red-700 text-sm">{error}</p>
-                        </div>
-                    )}
+                        {error ? (
+                            <Surface className="border-rose-200 bg-rose-50/70 p-5">
+                                <div className="flex items-start gap-3">
+                                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-700">
+                                        !
+                                    </span>
+                                    <div>
+                                        <p className="text-sm font-semibold text-rose-900">Response failed</p>
+                                        <p className="mt-1 text-sm leading-6 text-rose-700">{error}</p>
+                                    </div>
+                                </div>
+                            </Surface>
+                        ) : null}
 
-                    {loading && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                            <div className="flex items-center">
-                                <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full mr-3"></div>
-                                <p className="text-blue-900 font-medium">Thinking...</p>
+                        {reply ? (
+                            <Surface className="overflow-hidden">
+                                <div className="border-b border-slate-200 px-6 py-5">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div>
+                                            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-slate-500">Response</p>
+                                            <h2 className="mt-2 text-lg font-semibold tracking-tight text-slate-950">Grounded answer</h2>
+                                        </div>
+                                        <Badge tone="success">Retrieved context used</Badge>
+                                    </div>
+                                </div>
+
+                                <div className="px-6 py-6">
+                                    <MarkdownContent content={reply} />
+                                </div>
+
+                                {sources.length > 0 ? (
+                                    <div className="border-t border-slate-200 bg-slate-50/80 px-6 py-5">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <h3 className="text-sm font-semibold tracking-tight text-slate-950">
+                                                Retrieved sources
+                                            </h3>
+                                            <Badge tone="info">{sources.length} matches</Badge>
+                                        </div>
+
+                                        <div className="mt-4 space-y-3">
+                                            {sources.map((source, index) => (
+                                                <div
+                                                    key={`${source.documentId}-${source.chunkIndex}-${index}`}
+                                                    className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm"
+                                                >
+                                                    <div className="flex items-start justify-between gap-4">
+                                                        <div className="min-w-0">
+                                                            <p className="truncate text-sm font-medium text-slate-950">
+                                                                {source.sourceFileName}
+                                                            </p>
+                                                            <p className="mt-1 text-xs text-slate-500">
+                                                                Chunk #{source.chunkIndex} • Relevance {(source.similarity * 100).toFixed(0)}%
+                                                            </p>
+                                                        </div>
+                                                        <Badge tone="neutral">Source {index + 1}</Badge>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : null}
+                            </Surface>
+                        ) : (
+                            <Surface className="p-6">
+                                <EmptyState
+                                    title="No response yet"
+                                    description="Ask a question to see a grounded answer and supporting source chunks here."
+                                />
+                            </Surface>
+                        )}
+
+                        <Surface className="p-5 sm:p-6">
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between gap-3">
+                                    <label className="text-sm font-medium text-slate-800" htmlFor="chat-message">
+                                        Your question
+                                    </label>
+                                    <span className="text-xs text-slate-500">Shift+Enter for a new line</span>
+                                </div>
+                                <TextArea
+                                    id="chat-message"
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    onKeyPress={handleKeyPress}
+                                    placeholder="Ask a question about your documents..."
+                                    disabled={loading}
+                                    rows={4}
+                                />
                             </div>
-                        </div>
-                    )}
-                </div>
 
-                {/* Input Area */}
-                <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 sticky bottom-0">
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">
-                        Your Question
-                    </label>
-                    <div className="flex gap-3">
-                        <textarea
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            onKeyPress={handleKeyPress}
-                            placeholder="Ask a question about your documents... (Shift+Enter for new line)"
-                            className="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                            rows={3}
-                        />
-                        <button
-                            onClick={sendMessage}
-                            disabled={loading || !message.trim()}
-                            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition h-fit"
-                        >
-                            Send
-                        </button>
+                            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <p className="text-xs leading-6 text-slate-500">
+                                    Ask a precise question to improve retrieval quality and response relevance.
+                                </p>
+                                <Button onClick={sendMessage} disabled={loading || !message.trim()} className="w-full sm:w-auto sm:px-6">
+                                    Send message
+                                </Button>
+                            </div>
+                        </Surface>
                     </div>
-                    <p className="text-xs text-slate-600 mt-2">💡 Tip: Ask specific questions about your uploaded documents for the best results.</p>
                 </div>
-            </main>
-        </div>
+            </AppContainer>
+        </AppShell>
     )
 }
