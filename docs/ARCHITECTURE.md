@@ -1,4 +1,4 @@
-# Unicollab AI System Architecture
+# AI Document Intelligence & RAG Chat System Architecture
 
 ## Overview
 

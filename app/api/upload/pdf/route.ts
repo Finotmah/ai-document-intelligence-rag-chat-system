@@ -62,7 +62,19 @@ export async function POST(req: Request): Promise<Response> {
         embeddingModel: ingestOutput.embeddingModel,
       }
     } catch (ingestError: unknown) {
-      console.warn("Phase 3 ingest warning:", ingestError instanceof Error ? ingestError.message : "Unknown ingest error")
+      const ingestMessage = ingestError instanceof Error ? ingestError.message : "Unknown ingest error"
+      console.error("Phase 3 ingest failed:", ingestMessage)
+
+      return Response.json(
+        {
+          success: false,
+          error: {
+            code: "INGEST_ERROR",
+            message: `PDF was extracted, but indexing failed: ${ingestMessage}`,
+          },
+        } as UploadResponse,
+        { status: 500 }
+      )
     }
 
     // Return success response

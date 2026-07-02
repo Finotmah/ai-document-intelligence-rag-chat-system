@@ -1,32 +1,87 @@
-# Unicollab AI — Retrieval-Augmented Generation (RAG) System
+# AI Document Intelligence & RAG Chat System
 
-A full-stack RAG system for document ingestion and intelligent Q&A using PDF uploads, semantic chunking, embeddings, and an LLM (Groq).
+AI Document Intelligence & RAG Chat System is a full-stack Next.js application for uploading PDFs, extracting and chunking text, generating embeddings, storing vectors in PostgreSQL, and answering questions with retrieval-augmented generation.
 
-## Features
+## Highlights
 
-- 📄 **PDF Upload & Extraction** – Upload PDFs and extract text using pdf-parse
-- 🔀 **Semantic Chunking** – Split text into 300–500 word chunks preserving meaning
-- 🧠 **Embeddings** – Generate 384-dimensional embeddings using Xenova (in-process, no API calls)
-- 🗃️ **Vector Database** – Store and search embeddings using PostgreSQL + pgvector
-- 🎯 **RAG Chat** – Ask questions and get grounded answers with source attribution
-- 🧪 **Integration Tests** – Automated tests for the entire pipeline
-- 📚 **Comprehensive Docs** – Full documentation for developers and operators
+- PDF upload and extraction with `pdf-parse`
+- Semantic chunking for better retrieval quality
+- In-process 384-dimensional embeddings with `@xenova/transformers`
+- PostgreSQL + pgvector for document storage and similarity search
+- RAG chat with grounded answers and source attribution
+- Deployment-ready API routes and documentation
+
+## Tech Stack
+
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- PostgreSQL 16 + pgvector
+- Groq API for chat completions
+
+## Architecture Overview
+
+The system is organized as a document intelligence pipeline with clearly separated presentation, processing, storage, and generation layers. PDFs are uploaded through the UI, processed by API routes, indexed into PostgreSQL with pgvector, and queried through a retrieval-augmented chat flow.
+
+```mermaid
+flowchart TD
+  A[User Interface\nUpload, Dashboard, Chat] --> B[API Layer\nUpload and Ingest Routes]
+  B --> C[Document Processing\nPDF Extraction and Chunking]
+  C --> D[Embedding Layer\nXenova 384-dim Vectors]
+  D --> E[Data Layer\nPostgreSQL + pgvector]
+  E --> F[Retrieval Layer\nSemantic Similarity Search]
+  F --> G[Generation Layer\nGroq LLM with Retrieved Context]
+  G --> H[Answer Delivery\nGrounded Response + Sources]
+```
+
+### Core Flow
+
+1. A user uploads a PDF from the upload page.
+2. The backend extracts text and splits it into semantically meaningful chunks.
+3. Each chunk is embedded and stored in PostgreSQL with vector metadata.
+4. When a question is submitted in chat, the system retrieves the most relevant chunks.
+5. The Groq model generates a grounded answer using only the retrieved context.
+6. The response is returned with source attribution for transparency.
+
+## Project Structure
+
+```text
+app/
+├── api/
+│   ├── chat/
+│   ├── documents/
+│   └── upload/pdf/
+├── chat/
+├── dashboard/
+├── upload/
+├── components/
+└── lib/
+
+db/
+└── schema.sql
+
+docs/
+└── *.md
+```
 
 ## Quick Start
 
 ### Prerequisites
 
 - Node.js 18+
-- Docker (for PostgreSQL)
-- Groq API Key (free at https://console.groq.com)
+- Docker
+- Groq API key from https://console.groq.com
 
-### Setup (5 minutes)
+### Install
 
 ```bash
-# 1. Install dependencies
 npm install
+```
 
-# 2. Start PostgreSQL with pgvector
+### Set Up PostgreSQL
+
+```bash
 docker run -d \
   --name unicollab-pg \
   -e POSTGRES_PASSWORD=postgres \
@@ -34,100 +89,32 @@ docker run -d \
   -p 5435:5432 \
   pgvector/pgvector:pg16
 
-# Wait for container to start
-sleep 5
-
-# 3. Initialize database
 docker exec unicollab-pg psql -U postgres -d UnicollabAi < db/schema.sql
+```
 
-# 4. Create .env.local
-echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5435/UnicollabAi" > .env.local
-echo "GROQ_API_KEY=your-groq-api-key-here" >> .env.local
+### Configure Environment
 
-# 5. Start dev server
+Create `.env.local` in the project root:
+
+```env
+DATABASE_URL=postgresql://postgres:postgres@localhost:5435/UnicollabAi
+GROQ_API_KEY=your-groq-api-key-here
+```
+
+### Run Locally
+
+```bash
 npm run dev
 ```
 
-Open [http://localhost:3000/upload](http://localhost:3000/upload) in your browser.
+Open `http://localhost:3000` in your browser.
 
-### Test the System
+## Usage
 
-**Browser:** Upload a PDF at `/upload`, then ask a question at `/chat`
-
-**Command line:**
-```bash
-npm run integration:test
-```
-
-## Documentation
-
-**Comprehensive guides for understanding and extending the system:**
-
-| Document | Purpose |
-|----------|---------|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, data flow, tech stack overview |
-| [docs/SETUP.md](docs/SETUP.md) | Local development setup and troubleshooting |
-| [docs/API.md](docs/API.md) | Complete API endpoint documentation |
-| [docs/DATABASE.md](docs/DATABASE.md) | Database schema, vector storage, optimization |
-| [docs/PHASES.md](docs/PHASES.md) | Detailed breakdown of each implementation phase |
-| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Developer guide for extending the system |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Production deployment and scaling |
-
-## Architecture Overview
-
-```
-User Upload PDF
-    ↓
-Extract Text (pdf-parse)
-    ↓
-Semantic Chunking (300-500 words)
-    ↓
-Embedding Generation (Xenova, 384-dim)
-    ↓
-Vector Storage (PostgreSQL + pgvector)
-    ↓
-User Asks Question
-    ↓
-Vector Similarity Search
-    ↓
-Retrieve Top-K Relevant Chunks
-    ↓
-LLM Generates Grounded Answer (Groq)
-    ↓
-Return Answer + Sources to User
-```
-
-## Implementation Status
-
-| Phase | Component | Status |
-|-------|-----------|--------|
-| 1 | PDF Upload & Text Extraction | ✅ Complete |
-| 2 | Document Ingestion | ✅ Complete |
-| 3 | Semantic Chunking & Embeddings | ✅ Complete |
-| 4 | RAG Retrieval & Chat | ✅ Complete |
-| 4.5 | Integration Testing | ✅ Complete |
-| 5 | Recommendation System | 🔄 Planned |
-
-## Key Technologies
-
-- **Frontend:** Next.js 16, React 19, TailwindCSS
-- **Backend:** Node.js, TypeScript
-- **Database:** PostgreSQL 16 + pgvector extension
-- **Embeddings:** Xenova/all-MiniLM-L6-v2 (384-dim, in-process)
-- **LLM:** Groq API (llama-3.3-70b-versatile)
-- **PDF Extraction:** pdf-parse library
-
-## Environment Variables
-
-Create `.env.local` in project root:
-
-```env
-# PostgreSQL with pgvector
-DATABASE_URL=postgresql://postgres:postgres@localhost:5435/UnicollabAi
-
-# Groq API (get from https://console.groq.com)
-GROQ_API_KEY=your-api-key-here
-```
+1. Go to `/upload` and upload a PDF.
+2. Wait for extraction, chunking, and embedding generation.
+3. Open `/chat` and ask a question about the uploaded documents.
+4. Review the response and cited sources.
 
 ## Scripts
 
@@ -139,91 +126,48 @@ npm run lint             # Run ESLint
 npm run integration:test # Run integration tests
 ```
 
-## Directory Structure
+## API Routes
 
-```
-app/
-├── api/                    # API Routes
-│   ├── upload/pdf/        # PDF upload endpoint
-│   ├── documents/ingest/  # Text ingestion endpoint
-│   └── chat/              # RAG chat endpoint
-├── chat/                  # Chat UI
-├── upload/                # Upload UI
-├── lib/                   # Core business logic
-│   ├── phase3/           # Chunking, embedding, storage
-│   ├── phase4/           # Retrieval, RAG generation
-│   └── pdf-parser.ts     # PDF extraction
-└── components/           # React components
+- `POST /api/upload/pdf` - upload and index a PDF
+- `POST /api/documents/ingest` - ingest extracted text directly
+- `GET /api/documents` - list stored documents
+- `POST /api/chat` - ask a question against the indexed documents
 
-db/
-└── schema.sql            # Database schema + indexes
+## Documentation
 
-docs/
-├── ARCHITECTURE.md       # System design
-├── SETUP.md             # Local setup guide
-├── API.md               # API documentation
-├── DATABASE.md          # Database design
-├── PHASES.md            # Implementation details
-├── DEVELOPMENT.md       # Developer guide
-└── DEPLOYMENT.md        # Production setup
-
-scripts/
-└── integration/         # Integration tests
-    ├── test-chat-rag.js
-    └── README.md
-```
-
-## Common Tasks
-
-### Add a new API endpoint
-See [docs/DEVELOPMENT.md#add-a-new-api-endpoint](docs/DEVELOPMENT.md#add-a-new-api-endpoint)
-
-### Query the database
-See [docs/DEVELOPMENT.md#query-the-database](docs/DEVELOPMENT.md#query-the-database)
-
-### Deploy to production
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
-
-### Troubleshoot issues
-See [docs/SETUP.md#troubleshooting](docs/SETUP.md#troubleshooting)
-
-## Performance
-
-Typical latencies (on local machine):
-
-| Operation | Time |
-|-----------|------|
-| PDF upload (10MB) | 5–10s |
-| Semantic chunking | 1–2s |
-| Embedding generation | 3–5s |
-| Vector similarity search | 50–200ms |
-| LLM response | 2–4s |
-| **Total Q&A** | **2–5s** |
+| Document | Purpose |
+| --- | --- |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design and data flow |
+| [docs/SETUP.md](docs/SETUP.md) | Local setup and troubleshooting |
+| [docs/API.md](docs/API.md) | API reference |
+| [docs/DATABASE.md](docs/DATABASE.md) | Schema and vector storage details |
+| [docs/PHASES.md](docs/PHASES.md) | Implementation breakdown |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Developer guide |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Production deployment guide |
 
 ## Testing
 
 ```bash
-# Run integration test (uploads sample doc, asks question)
 npm run integration:test
-
-# Test specific endpoint with curl
-curl -X POST http://localhost:3000/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Summarize the document"}'
 ```
 
-## Next Steps
+You can also test the chat endpoint directly:
 
-1. **Read the docs:** Start with [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-2. **Set up locally:** Follow [docs/SETUP.md](docs/SETUP.md)
-3. **Understand the code:** Read [docs/PHASES.md](docs/PHASES.md) for implementation details
-4. **Extend the system:** See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for patterns
-5. **Deploy:** Follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for production
+```bash
+curl -X POST http://localhost:3000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Summarize the uploaded document"}'
+```
+
+## Deployment
+
+Before making the repository public, make sure these are configured in your deployment environment:
+
+- `DATABASE_URL`
+- `GROQ_API_KEY`
+
+The project is designed to run with a Node.js deployment target and a PostgreSQL database with pgvector enabled.
 
 ## License
 
 MIT
-
-## Support
-
-For issues or questions, see the relevant documentation file or open an issue on GitHub.

@@ -8,7 +8,7 @@ export default function UploadPage() {
             <div className="max-w-4xl mx-auto">
                 <div className="mb-12">
                     <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                        UniCollab AI
+                        AI Document Intelligence & RAG Chat System
                     </h1>
                     <p className="text-gray-600">
                         Phase 2 + Phase 3: PDF Upload → Text Extraction → Semantic Chunking → Embeddings

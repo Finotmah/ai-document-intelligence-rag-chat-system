@@ -1,8 +1,32 @@
 import { answerWithRAG } from "@/app/lib/phase4/rag-chat"
 
+function isGreeting(message: string): boolean {
+  const normalized = message.trim().toLowerCase()
+
+  return /^(hi|hello|hey|hiya|good morning|good afternoon|good evening|howdy|thanks|thank you)[!.?\s]*$/.test(normalized)
+}
+
+async function readJsonBody(req: Request): Promise<{ message?: unknown } | null> {
+  try {
+    return await req.json()
+  } catch {
+    return null
+  }
+}
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
+    const body = await readJsonBody(req)
+
+    if (!body) {
+      return Response.json(
+        {
+          error: "Invalid JSON payload",
+        },
+        { status: 400 }
+      )
+    }
+
     const message = typeof body.message === "string" ? body.message.trim() : ""
 
     if (!message) {
@@ -12,6 +36,14 @@ export async function POST(req: Request) {
         },
         { status: 400 }
       )
+    }
+
+    if (isGreeting(message)) {
+      return Response.json({
+        reply: "Hi! Upload a PDF first, then ask me a question about its contents.",
+        usedRAG: false,
+        sources: [],
+      })
     }
 
     const ragResult = await answerWithRAG(message)
